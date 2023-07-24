@@ -25,17 +25,17 @@ zhuoyuan0/calibration_lidar  /bin/bash
 
 ## 二.克隆项目
 
-$ cd
-$ git clone https://github.com/zhuoyuan00/calibration_lidar.git
+$ cd \
+$ git clone https://github.com/zhuoyuan00/calibration_lidar.git \
 $ cd calibration_lidar
 
 ## 三.编译
 
-$ mkdir build && cd build
+$ mkdir build && cd build \
 $ cmake .. && make -j
 
 ## 四.运行
 
-$ cd build
+$ cd build \
 $ ./calibration_kit
 
