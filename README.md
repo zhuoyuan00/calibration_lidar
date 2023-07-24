@@ -4,7 +4,7 @@
 
 $ docker pull zhuoyuan0/calibration_lidar
 
-建立容器
+建立容器 \
 $ docker run -it \ \
 --privileged \ \
 -v /run/udev:/run/udev  \ \
