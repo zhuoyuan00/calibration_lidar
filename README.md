@@ -5,11 +5,11 @@
 $ docker pull zhuoyuan0/calibration_lidar
 
 建立容器
-$ docker run -it \
---privileged \
--v /run/udev:/run/udev  \
--v /dev/bus/usb:/dev/bus/usb \
--v "/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+$ docker run -it \ \
+--privileged \ \
+-v /run/udev:/run/udev  \ \
+-v /dev/bus/usb:/dev/bus/usb \ \
+-v "/tmp/.X11-unix:/tmp/.X11-unix:rw" \ \
 -v "$XAUTH:$XAUTH" \
 -v ~/Documents:/root/Documents \
 --device-cgroup-rule='c 189:* rmw' \
