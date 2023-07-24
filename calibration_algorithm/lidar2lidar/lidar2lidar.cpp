@@ -26,6 +26,8 @@
 
 #include <pcl/registration/transformation_estimation_svd.h>
 
+#include <pcl/common/io.h>
+
 
 typedef pcl::PointNormal PointXYZN;
 typedef pcl::PointCloud<PointXYZN> PointCloudXYZN;
@@ -56,13 +58,24 @@ void icp_match(const PointCloudPtr& src, const PointCloudPtr& base, Eigen::Matri
   std::cout<<"source points size "<<src->size()<<std::endl;
   std::cout<<"target points size "<<base->size()<<std::endl;
 
-  icp.setMaxCorrespondenceDistance(5.0);
+  icp.setMaxCorrespondenceDistance(5);       //5
   icp.setMaximumIterations(100);
-  icp.setTransformationEpsilon(1e-4);
+  icp.setTransformationEpsilon(1e-6);       //1e-6
   icp.setEuclideanFitnessEpsilon(1e-3);
 
   PointCloudPtr src_registered(new PointCloud);
   Eigen::Matrix4f init_pose = trans.cast<float>();
+
+//  modified
+//  for de005
+//  init_pose << -0.7313537,  0.6819984,  0.0000000,  0,   -0.6819984, -0.7313537,  0.0000000,  0,
+//    0.0000000,  0.0000000,  1.0000000,  0,     0,0,0,1;
+//  for mid360_leica_room1
+//  init_pose << 0.1953514,  0.3897651, -0.8999561,  0,   -0.7252393,  0.6751375,  0.1349716,  0,
+//     0.6602014,  0.6263166,  0.4145620,  0,     0,0,0,1;
+//  for mid360_azure calib
+  // init_pose << 0, 0,  1.0000000,  0,   -1,  0,  0.0000000,  0,
+  //   0.0000000,  -1.0000000,  0.0000000,  0,     0,0,0,1;
 
   icp.align(*src_registered, init_pose);
 
@@ -70,10 +83,35 @@ void icp_match(const PointCloudPtr& src, const PointCloudPtr& base, Eigen::Matri
 
   if (icp.hasConverged()) {
     trans = icp.getFinalTransformation().cast<double>();
+//    modified
+    std::cout << "mean square error from getFitnessScore is: " << icp.getFitnessScore () << std::endl;
   } else {
 
     std::cout << "align failed" << std::endl;
   }
+}
+
+//modified
+
+// 用于将参数传递给回调函数的结构体
+struct CallbackArgs {
+    PointCloudPtr clicked_points_3d;
+    pcl::visualization::PCLVisualizer::Ptr viewerPtr;
+};
+void pickPointCallback(const pcl::visualization::PointPickingEvent &event, void *args) {
+    CallbackArgs *data = (CallbackArgs *) args;
+    if (event.getPointIndex() == -1)
+        return;
+    PointT current_point;
+    event.getPoint(current_point.x, current_point.y, current_point.z);
+    data->clicked_points_3d->points.push_back(current_point);
+    // 绘制红色点
+    pcl::visualization::PointCloudColorHandlerCustom<PointT> red(data->clicked_points_3d, 255, 0, 0);
+    data->viewerPtr->removePointCloud("clicked_points");
+    data->viewerPtr->addPointCloud(data->clicked_points_3d, red, "clicked_points");
+    data->viewerPtr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 10,
+                                                      "clicked_points");
+    std::cout << current_point.x << " " << current_point.y << " " << current_point.z << std::endl;
 }
 
 void lidar2lidarCalibration(const std::string& path1, const std::string& path2)
@@ -88,11 +126,13 @@ void lidar2lidarCalibration(const std::string& path1, const std::string& path2)
   pcl::removeNaNFromPointCloud<pcl::PointXYZINormal>(*target_pts, *target_pts, indices);
 
   pcl::VoxelGrid<pcl::PointXYZINormal> filter;
-  filter.setLeafSize(0.1f, 0.1f, 0.1f);
+  filter.setLeafSize(0.02f, 0.02f, 0.02f);
   filter.setInputCloud(source_pts);
   filter.filter(*source_pts);
   filter.setInputCloud(target_pts);
   filter.filter(*target_pts);
+  // pcl::io::savePCDFileASCII ("/home/liu/tools/calibration_kit/test_data/lidar2lidar/filtered_points2.pcd", *source_pts);
+  // pcl::io::savePCDFileASCII ("/home/liu/tools/calibration_kit/test_data/lidar2lidar/filtered_livox2.pcd", *target_pts);
 
   pcl::StatisticalOutlierRemoval<pcl::PointXYZINormal> sor;
 
@@ -115,6 +155,18 @@ void lidar2lidarCalibration(const std::string& path1, const std::string& path2)
 
   std::cout<<"the calibration result is "<<std::endl<<tran_mat_icp<<std::endl;
 
+// 输出成txt
+  // open a file for outputting the matrix
+    std::ofstream file("/home/liu/tools/calibration_kit/test_data/lidar2lidar/matrix.txt");
+
+    if (file.is_open()) {
+        file << tran_mat_icp; // 将矩阵写入文件
+        file.close(); // 关闭文件
+        std::cout << "矩阵已保存为 matrix.txt" << std::endl;
+    } else {
+        std::cout << "无法打开文件" << std::endl;
+    }
+ 
   PointCloudPtr transed_cloud(new PointCloud);
   pcl::transformPointCloud(*source_pts, *transed_cloud, tran_mat_icp);
 
@@ -124,8 +176,24 @@ void lidar2lidarCalibration(const std::string& path1, const std::string& path2)
   pcl::visualization::PointCloudColorHandlerCustom<PointT> source_color_handle(target_pts, 255, 0, 0);
   pcl::visualization::PointCloudColorHandlerCustom<PointT> target_color_handle(transed_cloud, 0, 255, 0);
 
+  // 合并保存点云
+  // pcl::PointCloud<pcl::PointXYZINormal> contrast_pts;
+  // contrast_pts = *target_pts;
+  // contrast_pts += *transed_cloud;
+  // pcl::io::savePCDFileASCII ("/home/liu/tools/calibration_kit/contrast.pcd", contrast_pts);
+  // std::cout << "contrast_pts saved." << std::endl;
+
   viewer->addPointCloud(target_pts, source_color_handle, "source");
   viewer->addPointCloud(transed_cloud, target_color_handle, "target");
+
+//  modified
+    CallbackArgs  cb_args;
+    PointCloudPtr clicked_points_3d(new PointCloud);
+    cb_args.clicked_points_3d = clicked_points_3d;
+    cb_args.viewerPtr = pcl::visualization::PCLVisualizer::Ptr(viewer);
+    viewer->registerPointPickingCallback(pickPointCallback, (void*)&cb_args);
+    std::cout << "Shift+click on three floor points, then press 'Q'..." << std::endl;
+
 
   viewer->spin();
   //https://github.com/PointCloudLibrary/pcl/issues/172
