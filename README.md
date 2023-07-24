@@ -2,8 +2,10 @@
 
 ## 一.Docker镜像
 
-$ docker pull zhuoyuan0/calibration_lidar
-
+本地链接权限 \
+$ xhost +local: \
+拉镜像 \
+$ docker pull zhuoyuan0/calibration_lidar \
 建立容器 \
 $ docker run -it \ \
 --privileged \ \
