@@ -2,10 +2,10 @@
 
 ## 一.Docker镜像
 
-docker pull zhuoyuan0/calibration_lidar
+$ docker pull zhuoyuan0/calibration_lidar
 
 建立容器
-docker run -it \
+$ docker run -it \
 --privileged \
 -v /run/udev:/run/udev  \
 -v /dev/bus/usb:/dev/bus/usb \
@@ -25,18 +25,17 @@ zhuoyuan0/calibration_lidar  /bin/bash
 
 ## 二.克隆项目
 
-cd
-git clone https://github.com/zhuoyuan00/calibration_lidar.git
-cd calibration_lidar
+$ cd
+$ git clone https://github.com/zhuoyuan00/calibration_lidar.git
+$ cd calibration_lidar
 
 ## 三.编译
 
-mkdir build && cd build
-cmake .. && make -j
+$ mkdir build && cd build
+$ cmake .. && make -j
 
 ## 四.运行
 
-cd build
-
-./calibration_kit
+$ cd build
+$ ./calibration_kit
 
