@@ -38,7 +38,7 @@ $ cmake .. && make -j
 
 ## 四.运行
 
-将待配准点云拷贝到docker环境中/root/calibration_kit/test_data/lidar2lidar \
+先将待配准点云拷贝到docker环境中/root/calibration_kit/test_data/lidar2lidar \
 $ cd build \
-$ ./calibration_kit
-
+$ ./calibration_kit \
+选择点云文件
